@@ -1,65 +1,215 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Council } from '@/components/Council';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ApiKeySetup } from '@/components/ApiKeySetup';
+import { agents, ALL_AGENTS } from '@/lib/agents';
+import { PRESET_TOPICS, API_KEY_STORAGE_KEY } from '@/lib/constants';
+import { events } from '@/lib/analytics';
+
+const SMALL_WORDS = new Set(['vs', 'or', 'for', 'the', 'a', 'an', 'in', 'of', 'to']);
+
+function formatTopicLabel(topic: string) {
+  const words = topic.split(' ');
+  return (
+    <span className="flex flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5">
+      {words.map((word, i) => {
+        const isSmall = SMALL_WORDS.has(word.toLowerCase());
+        return (
+          <span
+            key={i}
+            className={
+              isSmall
+                ? 'text-[11px] text-[#667781] font-normal'
+                : 'text-[15px] font-bold text-[#e9edef]'
+            }
+          >
+            {word}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export default function Home() {
+  const [customTopic, setCustomTopic] = useState('');
+  const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [needsApiKey, setNeedsApiKey] = useState(false);
+  const [checkedKey, setCheckedKey] = useState(false);
+
+  // Check if API key is configured (server or browser)
+  useEffect(() => {
+    async function checkKey() {
+      try {
+        const res = await fetch('/api/health');
+        const { hasServerKey } = await res.json();
+
+        if (hasServerKey) {
+          setCheckedKey(true);
+          return;
+        }
+
+        // No server key — check localStorage
+        const browserKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+        if (browserKey) {
+          setCheckedKey(true);
+          return;
+        }
+
+        // Neither — show setup
+        setNeedsApiKey(true);
+        setCheckedKey(true);
+      } catch {
+        // Health check failed — assume no key
+        setNeedsApiKey(true);
+        setCheckedKey(true);
+      }
+    }
+
+    checkKey();
+  }, []);
+
+  function startTopic(topic: string, isCustom: boolean) {
+    events.topicSelected(topic, isCustom);
+    setActiveTopic(topic);
+  }
+
+  // ── Council view ──
+  if (activeTopic) {
+    return (
+      <div className="h-dvh flex flex-col">
+        <ErrorBoundary>
+          <Council
+            key={activeTopic}
+            topic={activeTopic}
+            onReset={() => setActiveTopic(null)}
+          />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  // ── Landing page ──
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-dvh flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8 slide-up">
+          <div className="text-5xl mb-4">⚡</div>
+          <h1 className="text-[1.65rem] font-bold text-[#e9edef] mb-2 tracking-tight">
+            The Data Council
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-[#8696a0] text-sm leading-relaxed">
+            5 AI analysts. 1 topic. Real charts. No mercy.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Agent roster */}
+        <div
+          className="flex justify-center gap-3 mb-8 slide-up"
+          style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
+        >
+          {ALL_AGENTS.map((id) => {
+            const agent = agents[id];
+            return (
+              <div key={id} className="text-center group cursor-default" title={agent.description}>
+                <div className="w-11 h-11 rounded-full bg-[#202c33] flex items-center justify-center text-lg mb-1.5 border-2 border-transparent group-hover:border-[#2a3942] transition-all duration-200 group-hover:scale-110">
+                  {agent.emoji}
+                </div>
+                <p className="text-[9px] text-[#8696a0] leading-tight group-hover:text-[#e9edef] transition-colors">
+                  {agent.name.replace('The ', '')}
+                </p>
+              </div>
+            );
+          })}
         </div>
-      </main>
+
+        {/* API key setup (when needed) */}
+        {needsApiKey && checkedKey && (
+          <ApiKeySetup
+            onKeyConfigured={() => setNeedsApiKey(false)}
+          />
+        )}
+
+        {/* Topic input */}
+        <div
+          className="mb-4 slide-up"
+          style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customTopic}
+              onChange={(e) => setCustomTopic(e.target.value)}
+              placeholder="Enter any topic to debate..."
+              className="flex-1 bg-[#2a3942] text-[#e9edef] px-4 py-3 rounded-xl border border-[#3b4a54] focus:border-[#00a884] focus:outline-none placeholder-[#667781] text-sm transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && customTopic.trim()) {
+                  startTopic(customTopic.trim(), true);
+                }
+              }}
+            />
+            {customTopic.trim() && (
+              <button
+                onClick={() => startTopic(customTopic.trim(), true)}
+                className="bg-[#00a884] text-white px-4 rounded-xl hover:bg-[#00c49a] transition-colors flex items-center"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div
+          className="flex items-center gap-3 mb-4 slide-up"
+          style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}
+        >
+          <div className="flex-1 h-px bg-[#2a3942]" />
+          <span className="text-[11px] text-[#667781]">or pick a topic</span>
+          <div className="flex-1 h-px bg-[#2a3942]" />
+        </div>
+
+        {/* Preset topics */}
+        <div
+          className="grid grid-cols-2 gap-2 slide-up"
+          style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}
+        >
+          {PRESET_TOPICS.map((preset) => (
+            <button
+              key={preset}
+              onClick={() => startTopic(preset, false)}
+              className="bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] px-3 py-4 rounded-xl text-center transition-all duration-200 border border-[#2a3942] hover:border-[#3b4a54] hover:scale-[1.03]"
+            >
+              {formatTopicLabel(preset)}
+            </button>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[10px] text-[#667781] mt-8">
+          Powered by Claude &middot;{' '}
+          <a
+            href="https://github.com/diegoltogni/data-council"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[#8696a0] transition-colors"
+          >
+            Open Source
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
