@@ -97,7 +97,7 @@ export function ChartBubble({ data, agentColor }: Props) {
   // Separate source from subtitle
   let subtitleText = data.subtitle || '';
   let sourceText = '';
-  const sourceMatch = subtitleText.match(/[\s—–-]*(?:source|src|via|data):\s*(.+)$/i);
+  const sourceMatch = subtitleText.match(/[\s—–-]*(?:source|src|via|data|fonte|fuente|quelle):\s*(.+)$/i);
   if (sourceMatch) {
     sourceText = sourceMatch[1].trim();
     subtitleText = subtitleText.slice(0, sourceMatch.index).replace(/[\s—–-]+$/, '').trim();
