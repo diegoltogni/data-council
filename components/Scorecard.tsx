@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { ScorecardData } from '@/lib/types';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -11,46 +12,58 @@ interface Props {
 
 export function Scorecard({ data, topic }: Props) {
   const { t } = useLanguage();
-  const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   const handleShare = useCallback(async () => {
-    const text = [
-      `⚡ THE DATA COUNCIL`,
-      `${data.topicShort || topic}`,
-      ``,
-      `🏆 ${data.winner.toUpperCase()}`,
-      ``,
-      ...data.stats.map(
-        (s) => `${s.label}: ${data.winner} ${s.winner_value} vs ${data.loser} ${s.loser_value}`
-      ),
-      ``,
-      `"${data.summary}"`,
-    ].join('\n');
+    if (!captureRef.current || sharing) return;
+    setSharing(true);
 
-    const url = 'https://council.experiai.com';
-    const title = `${data.topicShort || topic} — The Data Council`;
-
-    // Use native share on supported devices (mobile), clipboard fallback on desktop
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text, url });
-        return;
-      } catch {
-        // User cancelled or share failed — fall through to clipboard
-      }
-    }
-
-    // Fallback: copy to clipboard
     try {
-      await navigator.clipboard.writeText(`${text}\n\nTry it yourself → ${url}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }, [data, topic]);
+      // Capture the scorecard as an image
+      const canvas = await html2canvas(captureRef.current, {
+        backgroundColor: '#111b21',
+        scale: 2, // 2x for sharp retina images
+        useCORS: true,
+        logging: false,
+      });
+
+      // Convert to blob
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+
+      if (!blob) throw new Error('Failed to create image');
+
+      const file = new File([blob], 'data-council-verdict.png', { type: 'image/png' });
+
+      // Try native share with image (mobile)
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: `${data.topicShort || topic} — The Data Council`,
+          files: [file],
+        });
+        return;
+      }
+
+      // Fallback: download the image
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data-council-verdict.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // User cancelled share or error — silent
+    } finally {
+      setSharing(false);
+    }
+  }, [data, topic, sharing]);
 
   return (
     <div className="mx-3 my-4 slide-up">
-      <div className="bg-[#111b21] rounded-2xl overflow-hidden border border-[#2a3942] shadow-2xl">
+      {/* Capture area — everything inside this ref becomes the image */}
+      <div ref={captureRef} className="bg-[#111b21] rounded-2xl overflow-hidden border border-[#2a3942] shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#00a884]/20 via-[#53bdeb]/10 to-[#f5c842]/20 px-5 pt-5 pb-4 text-center">
           <p className="text-[9px] text-[#8696a0] tracking-[0.2em] uppercase font-medium mb-1.5">
@@ -98,28 +111,30 @@ export function Scorecard({ data, topic }: Props) {
           </p>
         </div>
 
-        {/* Footer + Share */}
-        <div className="bg-[#0d1820] px-5 py-3 flex items-center justify-between border-t border-[#1a2730]">
-          <p className="text-[9px] text-[#556770]">
+        {/* Branding footer (included in screenshot) */}
+        <div className="bg-[#0d1820] px-5 py-2.5 border-t border-[#1a2730]">
+          <p className="text-[9px] text-[#556770] text-center">
             ⚡ council.experiai.com
           </p>
-          <button
-            onClick={handleShare}
-            className="text-[11px] text-[#00a884] hover:text-[#00c49a] font-medium transition-colors flex items-center gap-1.5"
-          >
-            {copied ? (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                {t.copied}
-              </>
-            ) : (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
-                {t.shareScorecard}
-              </>
-            )}
-          </button>
         </div>
+      </div>
+
+      {/* Share button — outside capture area, not in screenshot */}
+      <div className="flex justify-center mt-3">
+        <button
+          onClick={handleShare}
+          disabled={sharing}
+          className="bg-[#00a884] hover:bg-[#00c49a] disabled:opacity-50 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+        >
+          {sharing ? (
+            'Generating...'
+          ) : (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
+              {t.shareScorecard}
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
