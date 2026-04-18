@@ -258,14 +258,23 @@ function HomeInner() {
             </p>
           </div>
           <p className="text-[10px] text-[#667781]">
-            {t.poweredBy} &middot;{' '}
+            Built by{' '}
+            <a
+              href="https://experiai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#00a884] hover:text-[#00c49a] transition-colors"
+            >
+              ExperiAI
+            </a>
+            {' '}&middot;{' '}
             <a
               href="https://github.com/diegoltogni/data-council"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#8696a0] transition-colors"
             >
-              {t.openSource}
+              View Code
             </a>
           </p>
         </div>
