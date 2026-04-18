@@ -154,9 +154,11 @@ body {
   animation: slide-up 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Closing message gradient border ── */
-.closing-message {
-  background: linear-gradient(#202c33, #202c33) padding-box,
-    linear-gradient(135deg, #00a884 0%, #53bdeb 50%, #f5c842 100%) border-box;
-  border: 1.5px solid transparent;
+/* ── Deliberating pulse ── */
+@keyframes deliberate-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.deliberating-pulse {
+  animation: deliberate-pulse 2s ease-in-out infinite;
 }

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { topic, transcript, winner, lang } = body as { topic: string; transcript: string; winner?: string; lang?: string };
+  const { topic, transcript, lang } = body as { topic: string; transcript: string; lang?: string };
   if (!topic || !transcript) {
     return Response.json({ error: 'Missing topic or transcript' }, { status: 400 });
   }
@@ -32,46 +32,41 @@ export async function POST(req: Request) {
   try {
     const client = createAnthropic({ apiKey });
 
-    const winnerInstruction = winner
-      ? `The council already decided the winner is "${winner}". Use this as the winner — do NOT re-judge.`
-      : `Determine the winner from the transcript.`;
-
     const result = await generateText({
       model: client('claude-sonnet-4-20250514'),
-      system: `You generate structured scorecard data from debate transcripts. Respond ONLY with valid JSON, no other text.`,
+      system: `You generate structured scorecard data from debate transcripts. You determine the winner based on the strongest arguments and data presented. Respond ONLY with valid JSON, no other text.`,
       messages: [
         {
           role: 'user',
           content: `Topic: "${topic}"
-${winnerInstruction}
 
 Debate transcript:
 ${transcript.slice(0, 5000)}
 
-Generate a scorecard. Return ONLY this JSON format:
+Based on the debate, determine the winner and generate a scorecard. Return ONLY this JSON:
 {
-  "topicShort": "A vs B format (e.g. 'Jordan vs LeBron', 'Trump vs Obama')",
-  "winner": "Name of the winning side",
-  "loser": "Name of the losing side",
+  "topicShort": "A vs B",
+  "winner": "Winner name",
+  "loser": "Loser name",
   "stats": [
-    { "label": "Stat name", "winner_value": "value", "loser_value": "value" },
-    { "label": "Stat name", "winner_value": "value", "loser_value": "value" },
-    { "label": "Stat name", "winner_value": "value", "loser_value": "value" }
+    { "label": "Stat", "winner_value": "val", "loser_value": "val" },
+    { "label": "Stat", "winner_value": "val", "loser_value": "val" },
+    { "label": "Stat", "winner_value": "val", "loser_value": "val" },
+    { "label": "Stat", "winner_value": "val", "loser_value": "val" }
   ],
-  "summary": "One sentence explaining why the winner won"
+  "summary": "One sentence why the winner won"
 }
 
 Rules:
-- "topicShort" must be a clean "A vs B" format — just the two names/sides
-- Use exactly 3 stats that were actually discussed in the debate
-- Use REAL, accurate values — not made up numbers
-- Keep stat labels short (3-4 words max)
-- Keep summary to one punchy sentence
-- CRITICAL: winner/loser MUST be the actual DEBATE SUBJECTS (e.g. "Jordan", "LeBron") — NEVER analyst names like "The Quant" or "The Hot Take"${lang === 'pt' ? '\n- Write the summary in Brazilian Portuguese' : ''}`,
+- "topicShort": clean "A vs B" format (e.g. "Jordan vs LeBron")
+- Exactly 4 stats from the debate — real, accurate values
+- Stat labels: 2-3 words max (e.g. "Career PPG", "Titles", "MVPs")
+- winner/loser = debate SUBJECTS (e.g. "Jordan"), NEVER analyst names (e.g. "The Quant")
+- Pick the winner based on which side had stronger data support in the debate${lang === 'pt' ? '\n- Write summary and stat labels in Brazilian Portuguese' : ''}`,
         },
       ],
       temperature: 0.3,
-      maxOutputTokens: 300,
+      maxOutputTokens: 400,
     });
 
     // Parse the JSON from the response

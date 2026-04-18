@@ -90,8 +90,7 @@ function cleanRawText(text: string): string {
   return cleaned.trim();
 }
 
-function getPreTypingDelay(agentId: AgentId, isClosing?: boolean): number {
-  if (isClosing) return TIMING.CLOSING_PAUSE;
+function getPreTypingDelay(agentId: AgentId): number {
   const { min, max } = AGENT_TIMING[agentId];
   return min + Math.random() * (max - min);
 }
@@ -143,7 +142,7 @@ export function Council({ topic, lang, onReset }: Props) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
-  const [status, setStatus] = useState<'running' | 'finished'>('running');
+  const [status, setStatus] = useState<'running' | 'deliberating' | 'finished'>('running');
   const [copied, setCopied] = useState(false);
   const [scorecard, setScorecard] = useState<ScorecardData | null>(null);
   const messagesRef = useRef<ChatMessageType[]>([]);
@@ -155,7 +154,7 @@ export function Council({ topic, lang, onReset }: Props) {
       .filter((m) => m.rawText && m.rawText !== '[error]')
       .map((m) => {
         const agent = agents[m.agentId];
-        const prefix = m.isClosing ? `${agent.emoji} ${agent.name} — VERDICT` : `${agent.emoji} ${agent.name}`;
+        const prefix = `${agent.emoji} ${agent.name}`;
         return `${prefix}: ${m.rawText}`;
       })
       .join('\n\n');
@@ -198,13 +197,12 @@ export function Council({ topic, lang, onReset }: Props) {
 
     async function addAgentMessage(
       agentId: AgentId,
-      isOpening = false,
-      isClosing = false
+      isOpening = false
     ) {
       if (cancelled) return;
 
       // Pre-typing delay
-      await delay(getPreTypingDelay(agentId, isClosing));
+      await delay(getPreTypingDelay(agentId));
       if (cancelled) return;
 
       // Show typing indicator
@@ -225,7 +223,6 @@ export function Council({ topic, lang, onReset }: Props) {
             conversationHistory: history,
             topic,
             isOpening,
-            isClosing,
             lang,
           }),
         });
@@ -263,7 +260,6 @@ export function Council({ topic, lang, onReset }: Props) {
           rawText: '',
           timestamp: new Date(),
           isStreaming: true,
-          isClosing: isClosing || undefined,
         };
         messagesRef.current = [...messagesRef.current, liveMessage];
         if (!cancelled) setMessages([...messagesRef.current]);
@@ -412,39 +408,37 @@ export function Council({ topic, lang, onReset }: Props) {
         await addAgentMessage(agentId);
       }
 
-      // Closing: Moderator wraps up
+      // ── Deliberation: suspense before the verdict ──
       if (cancelled) return;
-      await addAgentMessage('moderator', false, true);
+      setStatus('deliberating');
+      events.debateCompleted(topic, messagesRef.current.length);
 
-      if (!cancelled) {
-        setStatus('finished');
-        events.debateCompleted(topic, messagesRef.current.length);
+      // Build transcript for scorecard
+      const transcript = messagesRef.current
+        .filter((m) => m.rawText && m.rawText !== '[error]')
+        .map((m) => `[${agents[m.agentId].name}]: ${m.rawText}`)
+        .join('\n\n');
 
-        // Extract winner from the moderator's closing message
-        const closingMsg = messagesRef.current[messagesRef.current.length - 1];
-        const winnerMatch = closingMsg?.rawText?.match(/🏆\s*(.+)/);
-        const verdictWinner = winnerMatch
-          ? winnerMatch[1].trim().split('\n')[0].trim()
-          : '';
+      const userApiKey = getUserApiKey();
 
-        // Generate scorecard in the background — pass the verdict winner for consistency
-        const transcript = messagesRef.current
-          .filter((m) => m.rawText && m.rawText !== '[error]')
-          .map((m) => `[${agents[m.agentId].name}]: ${m.rawText}`)
-          .join('\n\n');
-
-        const userApiKey = getUserApiKey();
+      // Fetch scorecard + enforce minimum suspense time (2.5s)
+      const [scorecardResult] = await Promise.all([
         fetch('/api/scorecard', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(userApiKey ? { 'X-API-Key': userApiKey } : {}),
           },
-          body: JSON.stringify({ topic, transcript, winner: verdictWinner, lang }),
+          body: JSON.stringify({ topic, transcript, lang }),
         })
           .then((res) => res.ok ? res.json() : null)
-          .then((data) => { if (data && !cancelled) setScorecard(data); })
-          .catch(() => {});
+          .catch(() => null),
+        delay(2500), // minimum suspense
+      ]);
+
+      if (!cancelled) {
+        if (scorecardResult) setScorecard(scorecardResult);
+        setStatus('finished');
       }
     }
 
@@ -499,11 +493,13 @@ export function Council({ topic, lang, onReset }: Props) {
         <div className="flex-1 min-w-0 ml-1">
           <h2 className="text-[#e9edef] text-sm font-medium">The Data Council</h2>
           <p className="text-[#8696a0] text-[11px] truncate">
-            {status === 'running'
-              ? typingAgent
-                ? `${agents[typingAgent].name} ${t.isSpeaking}`
-                : `${messages.length} ${t.messages}`
-              : `${t.verdictDelivered} · ${messages.length} ${t.messages}`}
+            {status === 'deliberating'
+              ? lang === 'pt' ? 'O conselho esta deliberando...' : 'The council is deliberating...'
+              : status === 'running'
+                ? typingAgent
+                  ? `${agents[typingAgent].name} ${t.isSpeaking}`
+                  : `${messages.length} ${t.messages}`
+                : `${t.verdictDelivered} · ${messages.length} ${t.messages}`}
           </p>
         </div>
       </div>
@@ -525,8 +521,17 @@ export function Council({ topic, lang, onReset }: Props) {
         {/* Typing indicator */}
         {typingAgent && <TypingIndicator agentId={typingAgent} />}
 
-        {/* Scorecard */}
-        {scorecard && <Scorecard data={scorecard} topic={topic} />}
+        {/* Deliberating */}
+        {status === 'deliberating' && (
+          <div className="flex justify-center my-6 fade-in">
+            <div className="bg-[#182229] text-[#8696a0] text-[12px] px-5 py-2.5 rounded-full border border-[#2a3942] deliberating-pulse">
+              {lang === 'pt' ? '🤔 O conselho esta deliberando...' : '🤔 The council is deliberating...'}
+            </div>
+          </div>
+        )}
+
+        {/* Scorecard (the verdict) */}
+        {status === 'finished' && scorecard && <Scorecard data={scorecard} topic={topic} />}
 
         <div ref={chatEndRef} />
       </div>

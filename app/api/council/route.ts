@@ -76,12 +76,11 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { agentId, conversationHistory, topic, isOpening, isClosing, lang } = body as {
+  const { agentId, conversationHistory, topic, isOpening, lang } = body as {
     agentId: string;
     conversationHistory?: string;
     topic: string;
     isOpening?: boolean;
-    isClosing?: boolean;
     lang?: string;
   };
 
@@ -126,8 +125,6 @@ export async function POST(req: Request) {
   let userMessage: string;
   if (isOpening) {
     userMessage = `The topic for today's council discussion is: "${topic}"\n\nOpen the discussion with ONE punchy sentence that frames the debate and provokes the analysts to take sides.`;
-  } else if (isClosing) {
-    userMessage = `Topic: "${topic}"\n\nHere's the full discussion:\n\n${history}\n\nDeliver the council's conclusion. Format it EXACTLY like this:\n\n🏆 [SUBJECT NAME]\n[One sentence explaining why]\n\nCRITICAL: The winner MUST be one of the actual debate subjects (e.g. "Jordan", "LeBron", "Python", "Trump") — NEVER an analyst name like "The Quant" or "The Hot Take". You are announcing which SIDE of the debate won, not which analyst argued best.`;
   } else {
     userMessage = `Here's the discussion so far:\n\n${history}\n\nIt's your turn. React to the data and arguments above. If someone made a strong point, acknowledge it. If you're changing your mind, say so. The council is working toward a verdict. Stay in character. ONE sentence.`;
   }

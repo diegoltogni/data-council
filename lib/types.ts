@@ -33,7 +33,6 @@ export interface ChatMessage {
   rawText: string;
   timestamp: Date;
   isStreaming?: boolean;
-  isClosing?: boolean;
 }
 
 export type DebateStatus = 'idle' | 'running' | 'finished' | 'error';

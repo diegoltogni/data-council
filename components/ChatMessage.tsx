@@ -25,32 +25,8 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
-function ConclusionText({ text }: { text: string }) {
-  // Split into winner line (first line with 🏆) and reasoning
-  const lines = text.split('\n').filter((l) => l.trim());
-  const winnerLine = lines.find((l) => l.includes('🏆')) || lines[0] || '';
-  const reasoning = lines.filter((l) => l !== winnerLine).join(' ').trim();
-  const winnerName = winnerLine.replace('🏆', '').trim();
-
-  return (
-    <div>
-      {winnerName && (
-        <p className="text-[20px] font-bold text-[#e9edef] mb-1 leading-tight">
-          🏆 {winnerName}
-        </p>
-      )}
-      {reasoning && (
-        <p className="text-[13px] text-[#8696a0] leading-relaxed">
-          {reasoning}
-        </p>
-      )}
-    </div>
-  );
-}  // end ConclusionText
-
 export const ChatMessage = memo(function ChatMessage({ message }: { message: ChatMessageType }) {
   const agent = agents[message.agentId];
-  const isClosing = message.isClosing;
   const isStreaming = message.isStreaming;
 
   return (
@@ -61,36 +37,23 @@ export const ChatMessage = memo(function ChatMessage({ message }: { message: Cha
       </div>
 
       {/* Bubble */}
-      <div
-        className={`max-w-[85%] min-w-[120px] rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm ${
-          isClosing ? 'closing-message' : 'bg-[#202c33]'
-        }`}
-      >
+      <div className="max-w-[85%] min-w-[120px] rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm bg-[#202c33]">
         {/* Agent name */}
-        <p
-          className={`font-medium mb-0.5 ${isClosing ? 'text-xs' : 'text-xs'}`}
-          style={{ color: agent.color }}
-        >
-          {isClosing && '✦ '}
+        <p className="font-medium mb-0.5 text-xs" style={{ color: agent.color }}>
           {agent.name}
-          {isClosing && ' — Council Conclusion'}
         </p>
 
         {/* Content parts */}
         {message.content.map((part, i) => (
           <div key={i}>
             {part.type === 'text' && (
-              isClosing && !isStreaming ? (
-                <ConclusionText text={stripMarkdown(part.text)} />
-              ) : (
-                <p
-                  className={`text-[#e9edef] leading-[1.4rem] whitespace-pre-wrap text-[13.5px] ${
-                    isStreaming && i === message.content.length - 1 ? 'streaming-cursor' : ''
-                  }`}
-                >
-                  {stripMarkdown(part.text)}
-                </p>
-              )
+              <p
+                className={`text-[#e9edef] leading-[1.4rem] whitespace-pre-wrap text-[13.5px] ${
+                  isStreaming && i === message.content.length - 1 ? 'streaming-cursor' : ''
+                }`}
+              >
+                {stripMarkdown(part.text)}
+              </p>
             )}
             {part.type === 'chart' && <ChartBubble data={part.chartData} agentColor={agent.color} />}
           </div>
