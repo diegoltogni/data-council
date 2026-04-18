@@ -48,19 +48,25 @@ function HomeInner() {
   const [customTopic, setCustomTopic] = useState('');
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [trendingTopics, setTrendingTopics] = useState<string[]>([]);
-  const [staticTopics, setStaticTopics] = useState<string[]>(() => pickRandomTopics(6));
+  const [staticTopics, setStaticTopics] = useState<string[]>([]);
+  const [topicsLoaded, setTopicsLoaded] = useState(false);
   const [needsApiKey, setNeedsApiKey] = useState(false);
   const [checkedKey, setCheckedKey] = useState(false);
 
-  // Fetch trending topics
+  // Fetch trending topics — don't show anything until this resolves
   useEffect(() => {
+    setTopicsLoaded(false);
     fetch(`/api/topics?lang=${lang}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.trending?.length) setTrendingTopics(data.trending);
-        if (data.static?.length) setStaticTopics(data.static);
+        setTrendingTopics(data.trending || []);
+        setStaticTopics(data.static || pickRandomTopics(3, lang));
       })
-      .catch(() => {});
+      .catch(() => {
+        setTrendingTopics([]);
+        setStaticTopics(pickRandomTopics(6, lang));
+      })
+      .finally(() => setTopicsLoaded(true));
   }, [lang]);
 
   // Check if API key is configured (server or browser)
@@ -215,8 +221,8 @@ function HomeInner() {
 
         {/* Topics grid: trending first, then static */}
         <div
-          className="grid grid-cols-2 gap-2 slide-up"
-          style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}
+          className={`grid grid-cols-2 gap-2 slide-up ${topicsLoaded ? '' : 'opacity-0'}`}
+          style={{ animationDelay: '0.3s', animationFillMode: 'backwards', transition: 'opacity 0.3s' }}
         >
           {trendingTopics.map((preset) => (
             <button
