@@ -162,15 +162,21 @@ export function Council({ topic, lang, onReset }: Props) {
   }, [messages]);
 
   const copyTranscript = useCallback(async () => {
-    const header = `The Data Council\nTopic: ${topic}\n${'—'.repeat(30)}\n\n`;
-    const footer = `\n\n${'—'.repeat(30)}\nPowered by The Data Council — council.experiai.com`;
+    const text = `The Data Council\nTopic: ${topic}\n${'—'.repeat(30)}\n\n${transcript}`;
+    const url = 'https://council.experiai.com';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${topic} — The Data Council`, text, url });
+        return;
+      } catch {}
+    }
+
     try {
-      await navigator.clipboard.writeText(header + transcript + footer);
+      await navigator.clipboard.writeText(`${text}\n\n${'—'.repeat(30)}\n${url}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
-    }
+    } catch {}
   }, [transcript, topic]);
 
   const scrollToBottom = useCallback(() => {

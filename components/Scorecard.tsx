@@ -13,8 +13,8 @@ export function Scorecard({ data, topic }: Props) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
-  const shareText = useCallback(() => {
-    const lines = [
+  const handleShare = useCallback(async () => {
+    const text = [
       `⚡ THE DATA COUNCIL`,
       `${data.topicShort || topic}`,
       ``,
@@ -25,13 +25,27 @@ export function Scorecard({ data, topic }: Props) {
       ),
       ``,
       `"${data.summary}"`,
-      ``,
-      `Try it yourself → council.experiai.com`,
-    ];
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    ].join('\n');
+
+    const url = 'https://council.experiai.com';
+    const title = `${data.topicShort || topic} — The Data Council`;
+
+    // Use native share on supported devices (mobile), clipboard fallback on desktop
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(`${text}\n\nTry it yourself → ${url}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {}
   }, [data, topic]);
 
   return (
@@ -90,7 +104,7 @@ export function Scorecard({ data, topic }: Props) {
             ⚡ council.experiai.com
           </p>
           <button
-            onClick={shareText}
+            onClick={handleShare}
             className="text-[11px] text-[#00a884] hover:text-[#00c49a] font-medium transition-colors flex items-center gap-1.5"
           >
             {copied ? (
