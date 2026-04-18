@@ -13,7 +13,7 @@ function resolveApiKey(): string | null {
 
 export async function GET(req: Request) {
   const lang = new URL(req.url).searchParams.get('lang') || 'en';
-  const staticTopics = pickRandomTopics(3);
+  const staticTopics = pickRandomTopics(3, lang);
 
   // Check cache (per language)
   const now = Date.now();
@@ -33,7 +33,10 @@ export async function GET(req: Request) {
 
   try {
     const client = createAnthropic({ apiKey });
-    const langNote = lang === 'pt' ? ' Write them in Portuguese.' : '';
+    const isBR = lang === 'pt';
+    const regionContext = isBR
+      ? `Focus on what's trending in BRAZIL — Brazilian politics, Brasileirão/Libertadores football, Brazilian culture, Brazilian tech scene. Write all topics in Portuguese. Use Brazilian names and references that a Brazilian audience would instantly recognize.`
+      : `Focus on what's trending globally — US/world politics, Premier League/NBA/NFL, global tech, pop culture.`;
 
     const result = await generateText({
       model: client('claude-haiku-4-5-20251001'),
@@ -41,13 +44,15 @@ export async function GET(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Generate exactly 3 trending debate topics in "A vs B" format. Base them on what's currently being discussed globally — current events, recent sports matchups, tech announcements, pop culture, politics, business trends.
+          content: `Generate exactly 3 trending debate topics in "A vs B" format.
+
+${regionContext}
 
 Rules:
 - Each topic must be "Name vs Name" format (2-4 words max)
 - Make them spicy and debatable — things people genuinely argue about RIGHT NOW
 - Mix categories: 1 from current events/politics, 1 from tech/business, 1 from sports/culture
-- No generic evergreen topics — they must feel timely${langNote}
+- No generic evergreen topics — they must feel timely and regional
 
 Return ONLY a JSON array like: ["Topic1 vs Topic2", "Topic3 vs Topic4", "Topic5 vs Topic6"]`,
         },

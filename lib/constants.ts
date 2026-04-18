@@ -83,9 +83,37 @@ export const TOPIC_POOL = [
   'Bitcoin vs Gold',
 ] as const;
 
+/** Brazilian topic pool */
+export const TOPIC_POOL_PT = [
+  // Futebol
+  'Flamengo vs Palmeiras',
+  'Neymar vs Vini Jr',
+  'Pele vs Garrincha',
+  'Corinthians vs Sao Paulo',
+  'Ronaldinho vs Romario',
+  'Senna vs Piquet',
+  // Tech & AI
+  'SQL vs Python',
+  'Dashboards vs Agentes IA',
+  'AWS vs Azure',
+  'React vs Vue',
+  // Negocios
+  'Remoto vs Escritorio',
+  'Startup vs Corporacao',
+  'CLT vs PJ',
+  'MBA vs Experiencia',
+  // Cultura
+  'Lula vs Bolsonaro',
+  'Spotify vs Deezer',
+  'iPhone vs Android',
+  'Bitcoin vs Ouro',
+  'SP vs Rio',
+  'Acai vs Cupuacu',
+] as const;
+
 /** Pick n random items from the pool */
-export function pickRandomTopics(n: number = 6): string[] {
-  const pool = [...TOPIC_POOL];
+export function pickRandomTopics(n: number = 6, lang: string = 'en'): string[] {
+  const pool = lang === 'pt' ? [...TOPIC_POOL_PT] : [...TOPIC_POOL];
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
