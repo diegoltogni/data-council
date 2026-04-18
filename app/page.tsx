@@ -8,6 +8,7 @@ import { ApiKeySetup } from '@/components/ApiKeySetup';
 import { agents, ALL_AGENTS } from '@/lib/agents';
 import { PRESET_TOPICS, API_KEY_STORAGE_KEY } from '@/lib/constants';
 import { events } from '@/lib/analytics';
+import { LanguageProvider, LanguageSwitch, useLanguage } from '@/lib/LanguageContext';
 
 const SMALL_WORDS = new Set(['vs', 'or', 'for', 'the', 'a', 'an', 'in', 'of', 'to']);
 
@@ -35,6 +36,15 @@ function formatTopicLabel(topic: string) {
 }
 
 export default function Home() {
+  return (
+    <LanguageProvider>
+      <HomeInner />
+    </LanguageProvider>
+  );
+}
+
+function HomeInner() {
+  const { lang, t } = useLanguage();
   const [customTopic, setCustomTopic] = useState('');
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
   const [needsApiKey, setNeedsApiKey] = useState(false);
@@ -83,8 +93,9 @@ export default function Home() {
       <div className="h-dvh flex flex-col">
         <ErrorBoundary>
           <Council
-            key={activeTopic}
+            key={activeTopic + lang}
             topic={activeTopic}
+            lang={lang}
             onReset={() => setActiveTopic(null)}
           />
         </ErrorBoundary>
@@ -96,14 +107,19 @@ export default function Home() {
   return (
     <div className="min-h-dvh flex items-center justify-center p-4">
       <div className="max-w-md w-full">
+        {/* Language switch */}
+        <div className="flex justify-end mb-4 slide-up">
+          <LanguageSwitch />
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8 slide-up">
           <div className="text-5xl mb-4">⚡</div>
           <h1 className="text-[1.65rem] font-bold text-[#e9edef] mb-2 tracking-tight">
-            The Data Council
+            {t.title}
           </h1>
           <p className="text-[#8696a0] text-sm leading-relaxed">
-            5 AI analysts. 1 topic. Real charts. No mercy.
+            {t.subtitle}
           </p>
         </div>
 
@@ -144,7 +160,7 @@ export default function Home() {
               type="text"
               value={customTopic}
               onChange={(e) => setCustomTopic(e.target.value)}
-              placeholder="Enter any topic to debate..."
+              placeholder={t.inputPlaceholder}
               className="flex-1 bg-[#2a3942] text-[#e9edef] px-4 py-3 rounded-xl border border-[#3b4a54] focus:border-[#00a884] focus:outline-none placeholder-[#667781] text-sm transition-colors"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && customTopic.trim()) {
@@ -178,7 +194,7 @@ export default function Home() {
           style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}
         >
           <div className="flex-1 h-px bg-[#2a3942]" />
-          <span className="text-[11px] text-[#667781]">or pick a topic</span>
+          <span className="text-[11px] text-[#667781]">{t.orPickTopic}</span>
           <div className="flex-1 h-px bg-[#2a3942]" />
         </div>
 
@@ -210,17 +226,17 @@ export default function Home() {
             />
           </div>
           <p className="text-[10px] text-[#667781]">
-            Scan to try on your phone
+            {t.scanToTry}
           </p>
           <p className="text-[10px] text-[#667781]">
-            Powered by Claude &middot;{' '}
+            {t.poweredBy} &middot;{' '}
             <a
               href="https://github.com/diegoltogni/data-council"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#8696a0] transition-colors"
             >
-              Open Source
+              {t.openSource}
             </a>
           </p>
         </div>

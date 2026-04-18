@@ -76,12 +76,13 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { agentId, conversationHistory, topic, isOpening, isClosing } = body as {
+  const { agentId, conversationHistory, topic, isOpening, isClosing, lang } = body as {
     agentId: string;
     conversationHistory?: string;
     topic: string;
     isOpening?: boolean;
     isClosing?: boolean;
+    lang?: string;
   };
 
   // Rate limit: check on debate start (opening message only)
@@ -118,6 +119,9 @@ export async function POST(req: Request) {
       : '';
 
   const agent = agents[agentId as AgentId];
+  const langInstruction = lang === 'pt'
+    ? '\n\nIMPORTANT: Respond ENTIRELY in Brazilian Portuguese. All text, chart titles, subtitles, and labels must be in Portuguese. Keep your personality and style but write in Portuguese.'
+    : '';
 
   let userMessage: string;
   if (isOpening) {
@@ -133,7 +137,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: client('claude-sonnet-4-20250514'),
-      system: agent.systemPrompt,
+      system: agent.systemPrompt + langInstruction,
       messages: [{ role: 'user', content: userMessage }],
       temperature: 0.9,
       maxOutputTokens: 500,

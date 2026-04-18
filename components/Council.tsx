@@ -8,6 +8,7 @@ import { events } from '@/lib/analytics';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
 import { Scorecard } from './Scorecard';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // ── Helpers ──
 
@@ -134,10 +135,12 @@ function getUserApiKey(): string | null {
 
 interface Props {
   topic: string;
+  lang?: string;
   onReset: () => void;
 }
 
-export function Council({ topic, onReset }: Props) {
+export function Council({ topic, lang, onReset }: Props) {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [status, setStatus] = useState<'running' | 'finished'>('running');
@@ -223,6 +226,7 @@ export function Council({ topic, onReset }: Props) {
             topic,
             isOpening,
             isClosing,
+            lang,
           }),
         });
 
@@ -436,7 +440,7 @@ export function Council({ topic, onReset }: Props) {
             'Content-Type': 'application/json',
             ...(userApiKey ? { 'X-API-Key': userApiKey } : {}),
           },
-          body: JSON.stringify({ topic, transcript, winner: verdictWinner }),
+          body: JSON.stringify({ topic, transcript, winner: verdictWinner, lang }),
         })
           .then((res) => res.ok ? res.json() : null)
           .then((data) => { if (data && !cancelled) setScorecard(data); })
@@ -497,9 +501,9 @@ export function Council({ topic, onReset }: Props) {
           <p className="text-[#8696a0] text-[11px] truncate">
             {status === 'running'
               ? typingAgent
-                ? `${agents[typingAgent].name} is speaking...`
-                : `${messages.length} messages`
-              : `Verdict delivered · ${messages.length} messages`}
+                ? `${agents[typingAgent].name} ${t.isSpeaking}`
+                : `${messages.length} ${t.messages}`
+              : `${t.verdictDelivered} · ${messages.length} ${t.messages}`}
           </p>
         </div>
       </div>
@@ -537,12 +541,12 @@ export function Council({ topic, onReset }: Props) {
             {copied ? (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                Copied!
+                {t.copied}
               </>
             ) : (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                Copy Transcript
+                {t.copyTranscript}
               </>
             )}
           </button>
@@ -550,7 +554,7 @@ export function Council({ topic, onReset }: Props) {
             onClick={onReset}
             className="bg-[#00a884] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#00c49a] transition-colors"
           >
-            New Topic
+            {t.newTopic}
           </button>
         </div>
       )}

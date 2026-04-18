@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { topic, transcript, winner } = body as { topic: string; transcript: string; winner?: string };
+  const { topic, transcript, winner, lang } = body as { topic: string; transcript: string; winner?: string; lang?: string };
   if (!topic || !transcript) {
     return Response.json({ error: 'Missing topic or transcript' }, { status: 400 });
   }
@@ -67,7 +67,7 @@ Rules:
 - Use REAL, accurate values — not made up numbers
 - Keep stat labels short (3-4 words max)
 - Keep summary to one punchy sentence
-- CRITICAL: winner/loser MUST be the actual DEBATE SUBJECTS (e.g. "Jordan", "LeBron") — NEVER analyst names like "The Quant" or "The Hot Take"`,
+- CRITICAL: winner/loser MUST be the actual DEBATE SUBJECTS (e.g. "Jordan", "LeBron") — NEVER analyst names like "The Quant" or "The Hot Take"${lang === 'pt' ? '\n- Write the summary in Brazilian Portuguese' : ''}`,
         },
       ],
       temperature: 0.3,
