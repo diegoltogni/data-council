@@ -4,7 +4,7 @@ import { AgentId } from './types';
 export const AGENT_TIMING: Record<AgentId, { min: number; max: number }> = {
   moderator: { min: 100, max: 300 },
   quant: { min: 200, max: 500 },
-  'eye-test': { min: 150, max: 400 },
+  'skeptic': { min: 150, max: 400 },
   historian: { min: 300, max: 600 },
   'hot-take': { min: 50, max: 200 },
 };
@@ -43,7 +43,7 @@ export const LIMITS = {
 export const VALID_AGENT_IDS = new Set<AgentId>([
   'moderator',
   'quant',
-  'eye-test',
+  'skeptic',
   'historian',
   'hot-take',
 ]);

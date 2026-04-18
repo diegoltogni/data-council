@@ -1,4 +1,4 @@
-export type AgentId = 'moderator' | 'quant' | 'eye-test' | 'historian' | 'hot-take';
+export type AgentId = 'moderator' | 'quant' | 'skeptic' | 'historian' | 'hot-take';
 
 export interface Agent {
   id: AgentId;
@@ -39,6 +39,7 @@ export interface ChatMessage {
 export type DebateStatus = 'idle' | 'running' | 'finished' | 'error';
 
 export interface ScorecardData {
+  topicShort: string;
   winner: string;
   loser: string;
   stats: {

@@ -14,7 +14,7 @@ export function Scorecard({ data, topic }: Props) {
   const shareText = useCallback(() => {
     const lines = [
       `⚡ THE DATA COUNCIL`,
-      `${topic}`,
+      `${data.topicShort || topic}`,
       ``,
       `🏆 ${data.winner.toUpperCase()}`,
       ``,
@@ -40,7 +40,7 @@ export function Scorecard({ data, topic }: Props) {
           <p className="text-[10px] text-[#8696a0] tracking-widest uppercase font-medium mb-1">
             The Data Council
           </p>
-          <p className="text-[13px] text-[#e9edef]">{topic}</p>
+          <p className="text-[13px] text-[#e9edef] font-medium">{data.topicShort || topic}</p>
         </div>
 
         {/* Winner */}

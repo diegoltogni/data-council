@@ -24,13 +24,17 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { topic, transcript } = body;
+  const { topic, transcript, winner } = body as { topic: string; transcript: string; winner?: string };
   if (!topic || !transcript) {
     return Response.json({ error: 'Missing topic or transcript' }, { status: 400 });
   }
 
   try {
     const client = createAnthropic({ apiKey });
+
+    const winnerInstruction = winner
+      ? `The council already decided the winner is "${winner}". Use this as the winner — do NOT re-judge.`
+      : `Determine the winner from the transcript.`;
 
     const result = await generateText({
       model: client('claude-sonnet-4-20250514'),
@@ -39,12 +43,14 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: `Topic: "${topic}"
+${winnerInstruction}
 
 Debate transcript:
 ${transcript.slice(0, 5000)}
 
-Generate a scorecard comparing the two sides of this debate. Return ONLY this JSON format:
+Generate a scorecard. Return ONLY this JSON format:
 {
+  "topicShort": "A vs B format (e.g. 'Jordan vs LeBron', 'Trump vs Obama')",
   "winner": "Name of the winning side",
   "loser": "Name of the losing side",
   "stats": [
@@ -56,11 +62,12 @@ Generate a scorecard comparing the two sides of this debate. Return ONLY this JS
 }
 
 Rules:
+- "topicShort" must be a clean "A vs B" format — just the two names/sides
 - Use exactly 3 stats that were actually discussed in the debate
 - Use REAL, accurate values — not made up numbers
 - Keep stat labels short (3-4 words max)
 - Keep summary to one punchy sentence
-- CRITICAL: winner/loser MUST be the actual DEBATE SUBJECTS (e.g. "Jordan", "LeBron", "Python", "SQL", "Trump", "Obama") — NEVER analyst names like "The Quant", "The Hot Take", "The Historian". The scorecard compares the two sides of the topic, not the analysts who argued.`,
+- CRITICAL: winner/loser MUST be the actual DEBATE SUBJECTS (e.g. "Jordan", "LeBron") — NEVER analyst names like "The Quant" or "The Hot Take"`,
         },
       ],
       temperature: 0.3,

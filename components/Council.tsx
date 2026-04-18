@@ -416,7 +416,14 @@ export function Council({ topic, onReset }: Props) {
         setStatus('finished');
         events.debateCompleted(topic, messagesRef.current.length);
 
-        // Generate scorecard in the background
+        // Extract winner from the moderator's closing message
+        const closingMsg = messagesRef.current[messagesRef.current.length - 1];
+        const winnerMatch = closingMsg?.rawText?.match(/🏆\s*(.+)/);
+        const verdictWinner = winnerMatch
+          ? winnerMatch[1].trim().split('\n')[0].trim()
+          : '';
+
+        // Generate scorecard in the background — pass the verdict winner for consistency
         const transcript = messagesRef.current
           .filter((m) => m.rawText && m.rawText !== '[error]')
           .map((m) => `[${agents[m.agentId].name}]: ${m.rawText}`)
@@ -429,7 +436,7 @@ export function Council({ topic, onReset }: Props) {
             'Content-Type': 'application/json',
             ...(userApiKey ? { 'X-API-Key': userApiKey } : {}),
           },
-          body: JSON.stringify({ topic, transcript }),
+          body: JSON.stringify({ topic, transcript, winner: verdictWinner }),
         })
           .then((res) => res.ok ? res.json() : null)
           .then((data) => { if (data && !cancelled) setScorecard(data); })
