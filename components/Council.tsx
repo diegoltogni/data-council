@@ -8,6 +8,7 @@ import { events } from '@/lib/analytics';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
 import { Scorecard } from './Scorecard';
+import { VsBanner } from './VsBanner';
 import { useLanguage } from '@/lib/LanguageContext';
 
 // ── Helpers ──
@@ -388,6 +389,10 @@ export function Council({ topic, lang, onReset }: Props) {
     async function runCouncil() {
       events.debateStarted(topic);
 
+      // Let the VS banner animation play out
+      await delay(2000);
+      if (cancelled) return;
+
       // Round 1: Moderator opens
       await addAgentMessage('moderator', true);
 
@@ -506,12 +511,8 @@ export function Council({ topic, lang, onReset }: Props) {
 
       {/* ── Chat area ── */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-bg px-1 py-3">
-        {/* Topic badge */}
-        <div className="flex justify-center mb-3">
-          <div className="bg-[#182229] text-[#8696a0] text-[11px] px-4 py-1.5 rounded-lg max-w-[85%] text-center leading-relaxed">
-            {topic}
-          </div>
-        </div>
+        {/* VS Intro Banner */}
+        <VsBanner topic={topic} />
 
         {/* Messages */}
         {messages.map((message) => (
