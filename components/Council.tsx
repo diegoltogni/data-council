@@ -179,19 +179,32 @@ export function Council({ topic, lang, onReset }: Props) {
     } catch {}
   }, [transcript, topic]);
 
-  const scrollToBottom = useCallback(() => {
+  const userScrolledUp = useRef(false);
+  const lastMessageCount = useRef(0);
+
+  // Detect when user scrolls up manually
+  useEffect(() => {
     const container = chatContainerRef.current;
     if (!container) return;
-    // Only auto-scroll if user is near the bottom (within 200px)
-    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (distanceFromBottom < 200) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+
+    const handleScroll = () => {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      userScrolledUp.current = distanceFromBottom > 300;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Only auto-scroll when a NEW message appears (not on every character)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, typingAgent, scrollToBottom]);
+    if (userScrolledUp.current) return;
+    const currentCount = messages.length;
+    if (currentCount !== lastMessageCount.current || typingAgent) {
+      lastMessageCount.current = currentCount;
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length, typingAgent]);
 
   useEffect(() => {
     let cancelled = false;
