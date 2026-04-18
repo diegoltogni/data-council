@@ -109,24 +109,26 @@ function HomeInner() {
     <div className="min-h-dvh flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Language switch */}
-        <div className="flex justify-end mb-4 slide-up">
+        <div className="flex justify-end mb-2 slide-up">
           <LanguageSwitch />
         </div>
 
         {/* Header */}
-        <div className="text-center mb-8 slide-up">
-          <div className="text-5xl mb-4">⚡</div>
-          <h1 className="text-[1.65rem] font-bold text-[#e9edef] mb-2 tracking-tight">
-            {t.title}
-          </h1>
-          <p className="text-[#8696a0] text-sm leading-relaxed">
+        <div className="text-center mb-4 slide-up">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-3xl">⚡</span>
+            <h1 className="text-[1.5rem] font-bold text-[#e9edef] tracking-tight">
+              {t.title}
+            </h1>
+          </div>
+          <p className="text-[#8696a0] text-xs leading-relaxed">
             {t.subtitle}
           </p>
         </div>
 
         {/* Agent roster */}
         <div
-          className="flex justify-center gap-3 mb-8 slide-up"
+          className="flex justify-center gap-3 mb-4 slide-up"
           style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
         >
           {ALL_AGENTS.map((id) => {
@@ -153,7 +155,7 @@ function HomeInner() {
 
         {/* Topic input */}
         <div
-          className="mb-4 slide-up"
+          className="mb-3 slide-up"
           style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
         >
           <div className="flex gap-2">
@@ -191,7 +193,7 @@ function HomeInner() {
 
         {/* Divider */}
         <div
-          className="flex items-center gap-3 mb-4 slide-up"
+          className="flex items-center gap-3 mb-3 slide-up"
           style={{ animationDelay: '0.25s', animationFillMode: 'backwards' }}
         >
           <div className="flex-1 h-px bg-[#2a3942]" />
@@ -215,20 +217,22 @@ function HomeInner() {
           ))}
         </div>
 
-        {/* QR Code + Footer */}
-        <div className="flex flex-col items-center mt-8 gap-3 slide-up" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
-          <div className="bg-white p-2 rounded-lg">
-            <QRCodeSVG
-              value="https://data-council-mu.vercel.app"
-              size={80}
-              bgColor="#ffffff"
-              fgColor="#0b141a"
-              level="M"
-            />
+        {/* QR Code (desktop only) + Footer */}
+        <div className="flex flex-col items-center mt-4 gap-2 slide-up" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
+          <div className="hidden sm:flex flex-col items-center gap-1.5">
+            <div className="bg-white p-1.5 rounded-md">
+              <QRCodeSVG
+                value="https://data-council-mu.vercel.app"
+                size={64}
+                bgColor="#ffffff"
+                fgColor="#0b141a"
+                level="M"
+              />
+            </div>
+            <p className="text-[9px] text-[#667781]">
+              {t.scanToTry}
+            </p>
           </div>
-          <p className="text-[10px] text-[#667781]">
-            {t.scanToTry}
-          </p>
           <p className="text-[10px] text-[#667781]">
             {t.poweredBy} &middot;{' '}
             <a
