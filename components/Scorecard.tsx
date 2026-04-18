@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import html2canvas from 'html2canvas';
 import { ScorecardData } from '@/lib/types';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -13,52 +12,95 @@ interface Props {
 export function Scorecard({ data, topic }: Props) {
   const { t } = useLanguage();
   const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
+  const shareAsText = useCallback(async () => {
+    const text = [
+      `⚡ THE DATA COUNCIL`,
+      `${data.topicShort || topic}`,
+      ``,
+      `🏆 ${data.winner.toUpperCase()}`,
+      ``,
+      ...data.stats.map(
+        (s) => `${s.label}: ${data.winner} ${s.winner_value} vs ${data.loser} ${s.loser_value}`
+      ),
+      ``,
+      `"${data.summary}"`,
+    ].join('\n');
+    const url = 'https://council.experiai.com';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${data.topicShort || topic}`, text, url });
+        return true;
+      } catch { /* cancelled */ }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n\n${url}`);
+      setSharing(false);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return true;
+    } catch {}
+    return false;
+  }, [data, topic]);
+
   const handleShare = useCallback(async () => {
-    if (!captureRef.current || sharing) return;
+    if (sharing) return;
     setSharing(true);
 
     try {
-      // Capture the scorecard as an image
-      const canvas = await html2canvas(captureRef.current, {
-        backgroundColor: '#111b21',
-        scale: 2, // 2x for sharp retina images
-        useCORS: true,
-        logging: false,
-      });
-
-      // Convert to blob
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/png')
-      );
-
-      if (!blob) throw new Error('Failed to create image');
-
-      const file = new File([blob], 'data-council-verdict.png', { type: 'image/png' });
-
-      // Try native share with image (mobile)
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: `${data.topicShort || topic} — The Data Council`,
-          files: [file],
+      // Try image capture first
+      if (captureRef.current) {
+        const html2canvasModule = await import('html2canvas');
+        const html2canvasFn = html2canvasModule.default;
+        const canvas = await html2canvasFn(captureRef.current, {
+          backgroundColor: '#111b21',
+          scale: 2,
+          useCORS: true,
+          logging: false,
         });
-        return;
-      }
 
-      // Fallback: download the image
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-council-verdict.png';
-      a.click();
-      URL.revokeObjectURL(url);
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, 'image/png')
+        );
+
+        if (blob) {
+          const file = new File([blob], 'data-council-verdict.png', { type: 'image/png' });
+
+          // Mobile: share image via native sheet
+          if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            await navigator.share({
+              title: `${data.topicShort || topic} — The Data Council`,
+              files: [file],
+            });
+            setSharing(false);
+            return;
+          }
+
+          // Desktop: download image
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'data-council-verdict.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setSharing(false);
+          return;
+        }
+      }
     } catch {
-      // User cancelled share or error — silent
-    } finally {
-      setSharing(false);
+      // Image capture failed — fall through to text
     }
-  }, [data, topic, sharing]);
+
+    // Fallback: share as text
+    await shareAsText();
+    setSharing(false);
+  }, [data, topic, sharing, shareAsText]);
+
 
   return (
     <div className="mx-3 my-4 slide-up">
@@ -128,6 +170,8 @@ export function Scorecard({ data, topic }: Props) {
         >
           {sharing ? (
             'Generating...'
+          ) : copied ? (
+            <>{t.copied}</>
           ) : (
             <>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
