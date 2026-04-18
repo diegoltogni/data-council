@@ -12,6 +12,9 @@ export interface Agent {
 export interface ChartData {
   type: 'bar' | 'line' | 'radar';
   title: string;
+  subtitle?: string;
+  xLabel?: string;
+  yLabel?: string;
   labels: string[];
   datasets: {
     label: string;
@@ -34,3 +37,14 @@ export interface ChatMessage {
 }
 
 export type DebateStatus = 'idle' | 'running' | 'finished' | 'error';
+
+export interface ScorecardData {
+  winner: string;
+  loser: string;
+  stats: {
+    label: string;
+    winner_value: string;
+    loser_value: string;
+  }[];
+  summary: string;
+}

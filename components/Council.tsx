@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { agents, AGENT_ORDER } from '@/lib/agents';
-import { AgentId, ChartData, ChatMessage as ChatMessageType, MessageContent } from '@/lib/types';
-import { TIMING, LIMITS, API_KEY_STORAGE_KEY } from '@/lib/constants';
+import { AgentId, ChartData, ChatMessage as ChatMessageType, MessageContent, ScorecardData } from '@/lib/types';
+import { TIMING, AGENT_TIMING, LIMITS, API_KEY_STORAGE_KEY } from '@/lib/constants';
 import { events } from '@/lib/analytics';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
+import { Scorecard } from './Scorecard';
 
 // ── Helpers ──
 
@@ -90,9 +91,14 @@ function cleanRawText(text: string): string {
 
 function getPreTypingDelay(agentId: AgentId, isClosing?: boolean): number {
   if (isClosing) return TIMING.CLOSING_PAUSE;
-  const base = TIMING.PRE_TYPING_MIN + Math.random() * (TIMING.PRE_TYPING_MAX - TIMING.PRE_TYPING_MIN);
-  if (agentId === 'hot-take') return Math.max(400, base - TIMING.HOT_TAKE_SPEED_BOOST);
-  return base;
+  const { min, max } = AGENT_TIMING[agentId];
+  return min + Math.random() * (max - min);
+}
+
+function getPostMessageDelay(agentId: AgentId, hasChart: boolean): number {
+  if (hasChart) return TIMING.POST_CHART;
+  if (agentId === 'moderator') return TIMING.POST_MODERATOR;
+  return TIMING.POST_TEXT;
 }
 
 function buildHistory(messages: ChatMessageType[]): string {
@@ -136,6 +142,7 @@ export function Council({ topic, onReset }: Props) {
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [status, setStatus] = useState<'running' | 'finished'>('running');
   const [copied, setCopied] = useState(false);
+  const [scorecard, setScorecard] = useState<ScorecardData | null>(null);
   const messagesRef = useRef<ChatMessageType[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -257,32 +264,79 @@ export function Council({ topic, onReset }: Props) {
         messagesRef.current = [...messagesRef.current, liveMessage];
         if (!cancelled) setMessages([...messagesRef.current]);
 
-        // ── Reveal content part by part at readable speed ──
+        // ── Reveal content part by part — letter by letter with typos ──
         const revealedContent: MessageContent[] = [];
 
         for (const part of finalContent) {
           if (cancelled) break;
 
           if (part.type === 'chart') {
-            // Charts appear instantly with animation
             revealedContent.push(part);
             updateLiveMessage(revealedContent, true);
-            await delay(300);
+            await delay(TIMING.CHART_REVEAL_PAUSE);
           } else {
-            // Text reveals word by word
-            const words = part.text.split(/(\s+)/);
-            let revealedText = '';
             revealedContent.push({ type: 'text', text: '' });
             const textIdx = revealedContent.length - 1;
+            const chars = part.text;
+            let displayed = '';
+            let i = 0;
 
-            for (const word of words) {
+            while (i < chars.length) {
               if (cancelled) break;
-              revealedText += word;
-              if (word.trim()) {
-                revealedContent[textIdx] = { type: 'text', text: revealedText };
+
+              // ~0.7% chance per char — roughly 5 typos across the whole debate
+              const shouldTypo = Math.random() < 0.007
+                && /[a-zA-Z]/.test(chars[i])
+                && i > 0 && /[a-zA-Z]/.test(chars[i - 1])
+                && i + 2 < chars.length; // need room to type ahead
+
+              if (shouldTypo) {
+                const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+                // 1. Type wrong letter at normal speed
+                const typoChar = alphabet[Math.floor(Math.random() * 26)];
+                displayed += typoChar;
+                revealedContent[textIdx] = { type: 'text', text: displayed };
                 updateLiveMessage(revealedContent, true);
-                await delay(90 + Math.random() * 60); // 90-150ms per word
+                await delay(TIMING.CHAR_REVEAL_MIN + Math.random() * (TIMING.CHAR_REVEAL_MAX - TIMING.CHAR_REVEAL_MIN));
+
+                // 2. Type 1-2 more chars before noticing (humans don't catch instantly)
+                const extraChars = 1 + Math.floor(Math.random() * 2);
+                for (let e = 0; e < extraChars && i + e < chars.length; e++) {
+                  displayed += alphabet[Math.floor(Math.random() * 26)];
+                  revealedContent[textIdx] = { type: 'text', text: displayed };
+                  updateLiveMessage(revealedContent, true);
+                  await delay(TIMING.CHAR_REVEAL_MIN + Math.random() * (TIMING.CHAR_REVEAL_MAX - TIMING.CHAR_REVEAL_MIN));
+                }
+
+                // 3. Pause — the "wait..." moment
+                await delay(TIMING.TYPO_NOTICE_MIN + Math.random() * (TIMING.TYPO_NOTICE_MAX - TIMING.TYPO_NOTICE_MIN));
+
+                // 4. Delete chars one by one (backspace is fast)
+                const charsToDelete = 1 + extraChars;
+                for (let d = 0; d < charsToDelete; d++) {
+                  displayed = displayed.slice(0, -1);
+                  revealedContent[textIdx] = { type: 'text', text: displayed };
+                  updateLiveMessage(revealedContent, true);
+                  await delay(TIMING.CHAR_DELETE_SPEED);
+                }
               }
+
+              // Type correct letter
+              displayed += chars[i];
+              revealedContent[textIdx] = { type: 'text', text: displayed };
+              updateLiveMessage(revealedContent, true);
+
+              // Variable speed: faster mid-word, slower after spaces/punctuation
+              if (chars[i] === ' ') {
+                await delay(TIMING.CHAR_SPACE_PAUSE + Math.random() * 40);
+              } else if (/[.,!?—]/.test(chars[i])) {
+                await delay(TIMING.CHAR_PUNCT_PAUSE + Math.random() * 60);
+              } else {
+                await delay(TIMING.CHAR_REVEAL_MIN + Math.random() * (TIMING.CHAR_REVEAL_MAX - TIMING.CHAR_REVEAL_MIN));
+              }
+
+              i++;
             }
           }
         }
@@ -323,8 +377,12 @@ export function Council({ topic, onReset }: Props) {
         setMessages([...messagesRef.current]);
       }
 
-      // Post-message pause
-      if (!cancelled) await delay(TIMING.POST_MESSAGE);
+      // Post-message pause — longer after charts, shorter after text
+      if (!cancelled) {
+        const hasChart = messagesRef.current[messagesRef.current.length - 1]
+          ?.content.some((c) => c.type === 'chart');
+        await delay(getPostMessageDelay(agentId, hasChart));
+      }
     }
 
     async function runCouncil() {
@@ -357,6 +415,25 @@ export function Council({ topic, onReset }: Props) {
       if (!cancelled) {
         setStatus('finished');
         events.debateCompleted(topic, messagesRef.current.length);
+
+        // Generate scorecard in the background
+        const transcript = messagesRef.current
+          .filter((m) => m.rawText && m.rawText !== '[error]')
+          .map((m) => `[${agents[m.agentId].name}]: ${m.rawText}`)
+          .join('\n\n');
+
+        const userApiKey = getUserApiKey();
+        fetch('/api/scorecard', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(userApiKey ? { 'X-API-Key': userApiKey } : {}),
+          },
+          body: JSON.stringify({ topic, transcript }),
+        })
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => { if (data && !cancelled) setScorecard(data); })
+          .catch(() => {});
       }
     }
 
@@ -436,6 +513,9 @@ export function Council({ topic, onReset }: Props) {
 
         {/* Typing indicator */}
         {typingAgent && <TypingIndicator agentId={typingAgent} />}
+
+        {/* Scorecard */}
+        {scorecard && <Scorecard data={scorecard} topic={topic} />}
 
         <div ref={chatEndRef} />
       </div>

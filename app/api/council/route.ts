@@ -6,6 +6,50 @@ import { VALID_AGENT_IDS, LIMITS } from '@/lib/constants';
 
 export const maxDuration = 60;
 
+// ── Rate limiting: 3 debates per IP per hour ──
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
+const MAX_DEBATES_PER_WINDOW = 3;
+const ipDebateCount = new Map<string, { count: number; windowStart: number }>();
+
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = ipDebateCount.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
+    ipDebateCount.set(ip, { count: 1, windowStart: now });
+    return { allowed: true, remaining: MAX_DEBATES_PER_WINDOW - 1 };
+  }
+
+  if (entry.count >= MAX_DEBATES_PER_WINDOW) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  entry.count++;
+  return { allowed: true, remaining: MAX_DEBATES_PER_WINDOW - entry.count };
+}
+
+// Clean up stale entries every 10 minutes
+if (typeof globalThis !== 'undefined') {
+  const cleanup = () => {
+    const now = Date.now();
+    for (const [ip, entry] of ipDebateCount) {
+      if (now - entry.windowStart > RATE_LIMIT_WINDOW) ipDebateCount.delete(ip);
+    }
+  };
+  if (!(globalThis as Record<string, unknown>).__rateLimitCleanup) {
+    (globalThis as Record<string, unknown>).__rateLimitCleanup = true;
+    setInterval(cleanup, 10 * 60 * 1000);
+  }
+}
+
 function resolveApiKey(req: Request): string | null {
   const serverKey = process.env.ANTHROPIC_API_KEY;
   if (serverKey && serverKey !== 'your-api-key-here') return serverKey;
@@ -40,6 +84,26 @@ export async function POST(req: Request) {
     isClosing?: boolean;
   };
 
+  // Rate limit: check on debate start (opening message only)
+  // Users who bring their own API key skip rate limiting
+  const usingServerKey = !req.headers.get('x-api-key');
+  if (isOpening && usingServerKey) {
+    const ip = getClientIp(req);
+    const { allowed } = checkRateLimit(ip);
+    if (!allowed) {
+      return Response.json(
+        {
+          error: `You've used all ${MAX_DEBATES_PER_WINDOW} free debates this hour. Add your own API key to continue.`,
+          code: 'RATE_LIMITED',
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': '3600' },
+        }
+      );
+    }
+  }
+
   if (!agentId || !VALID_AGENT_IDS.has(agentId as AgentId)) {
     return Response.json({ error: 'Invalid agent' }, { status: 400 });
   }
@@ -59,7 +123,7 @@ export async function POST(req: Request) {
   if (isOpening) {
     userMessage = `The topic for today's council discussion is: "${topic}"\n\nOpen the discussion with ONE punchy sentence that frames the debate and provokes the analysts to take sides.`;
   } else if (isClosing) {
-    userMessage = `Here's the full discussion:\n\n${history}\n\nDeliver the council's VERDICT. Which side won this debate? Be specific — name the answer and the single strongest data point or argument that decided it. This is a ruling, not a "both sides have merit" cop-out. One sentence.`;
+    userMessage = `Topic: "${topic}"\n\nHere's the full discussion:\n\n${history}\n\nDeliver the council's conclusion. Format it EXACTLY like this:\n\n🏆 [SUBJECT NAME]\n[One sentence explaining why]\n\nCRITICAL: The winner MUST be one of the actual debate subjects (e.g. "Jordan", "LeBron", "Python", "Trump") — NEVER an analyst name like "The Quant" or "The Hot Take". You are announcing which SIDE of the debate won, not which analyst argued best.`;
   } else {
     userMessage = `Here's the discussion so far:\n\n${history}\n\nIt's your turn. React to the data and arguments above. If someone made a strong point, acknowledge it. If you're changing your mind, say so. The council is working toward a verdict. Stay in character. ONE sentence.`;
   }
@@ -72,7 +136,7 @@ export async function POST(req: Request) {
       system: agent.systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       temperature: 0.9,
-      maxOutputTokens: 180,
+      maxOutputTokens: 500,
     });
 
     return result.toTextStreamResponse();

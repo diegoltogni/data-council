@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import dynamic from 'next/dynamic';
 import { agents } from '@/lib/agents';
 import { ChatMessage as ChatMessageType } from '@/lib/types';
@@ -24,7 +25,30 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
-export function ChatMessage({ message }: { message: ChatMessageType }) {
+function ConclusionText({ text }: { text: string }) {
+  // Split into winner line (first line with 🏆) and reasoning
+  const lines = text.split('\n').filter((l) => l.trim());
+  const winnerLine = lines.find((l) => l.includes('🏆')) || lines[0] || '';
+  const reasoning = lines.filter((l) => l !== winnerLine).join(' ').trim();
+  const winnerName = winnerLine.replace('🏆', '').trim();
+
+  return (
+    <div>
+      {winnerName && (
+        <p className="text-[20px] font-bold text-[#e9edef] mb-1 leading-tight">
+          🏆 {winnerName}
+        </p>
+      )}
+      {reasoning && (
+        <p className="text-[13px] text-[#8696a0] leading-relaxed">
+          {reasoning}
+        </p>
+      )}
+    </div>
+  );
+}  // end ConclusionText
+
+export const ChatMessage = memo(function ChatMessage({ message }: { message: ChatMessageType }) {
   const agent = agents[message.agentId];
   const isClosing = message.isClosing;
   const isStreaming = message.isStreaming;
@@ -49,20 +73,24 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
         >
           {isClosing && '✦ '}
           {agent.name}
-          {isClosing && ' — Final Verdict'}
+          {isClosing && ' — Council Conclusion'}
         </p>
 
         {/* Content parts */}
         {message.content.map((part, i) => (
           <div key={i}>
             {part.type === 'text' && (
-              <p
-                className={`text-[#e9edef] leading-[1.4rem] whitespace-pre-wrap ${
-                  isClosing ? 'text-[14px]' : 'text-[13.5px]'
-                } ${isStreaming && i === message.content.length - 1 ? 'streaming-cursor' : ''}`}
-              >
-                {stripMarkdown(part.text)}
-              </p>
+              isClosing && !isStreaming ? (
+                <ConclusionText text={stripMarkdown(part.text)} />
+              ) : (
+                <p
+                  className={`text-[#e9edef] leading-[1.4rem] whitespace-pre-wrap text-[13.5px] ${
+                    isStreaming && i === message.content.length - 1 ? 'streaming-cursor' : ''
+                  }`}
+                >
+                  {stripMarkdown(part.text)}
+                </p>
+              )
             )}
             {part.type === 'chart' && <ChartBubble data={part.chartData} agentColor={agent.color} />}
           </div>
@@ -77,4 +105,4 @@ export function ChatMessage({ message }: { message: ChatMessageType }) {
       </div>
     </div>
   );
-}
+});

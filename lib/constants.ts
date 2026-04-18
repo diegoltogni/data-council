@@ -1,16 +1,37 @@
 import { AgentId } from './types';
 
+/** Per-agent thinking delay ranges (ms) — minimal artificial pause, API latency does the rest */
+export const AGENT_TIMING: Record<AgentId, { min: number; max: number }> = {
+  moderator: { min: 100, max: 300 },
+  quant: { min: 200, max: 500 },
+  'eye-test': { min: 150, max: 400 },
+  historian: { min: 300, max: 600 },
+  'hot-take': { min: 50, max: 200 },
+};
+
 export const TIMING = {
-  /** Minimum delay before typing indicator appears (ms) */
-  PRE_TYPING_MIN: 2000,
-  /** Maximum delay before typing indicator appears (ms) */
-  PRE_TYPING_MAX: 4000,
-  /** Delay after a message completes — let the reader absorb (ms) */
-  POST_MESSAGE: 1200,
-  /** Extra pause before the closing message for dramatic effect (ms) */
-  CLOSING_PAUSE: 2500,
-  /** Reduction in pre-typing delay for "hot take" (fastest retort) */
-  HOT_TAKE_SPEED_BOOST: 600,
+  /** Dramatic pause before the closing message (ms) */
+  CLOSING_PAUSE: 1500,
+  /** Post-message pause for text-only messages (ms) */
+  POST_TEXT: 400,
+  /** Post-message pause after a chart — let people look at it (ms) */
+  POST_CHART: 1000,
+  /** Post-message pause after a moderator question (ms) */
+  POST_MODERATOR: 700,
+  /** Character reveal speed (ms per char) */
+  CHAR_REVEAL_MIN: 8,
+  CHAR_REVEAL_MAX: 18,
+  /** Pause after a space (between words) */
+  CHAR_SPACE_PAUSE: 15,
+  /** Pause after punctuation (.,!?—) */
+  CHAR_PUNCT_PAUSE: 35,
+  /** Backspace speed when deleting a typo (ms per char) */
+  CHAR_DELETE_SPEED: 40,
+  /** Pause when noticing a typo before deleting (ms) */
+  TYPO_NOTICE_MIN: 250,
+  TYPO_NOTICE_MAX: 400,
+  /** Pause when chart appears during reveal (ms) */
+  CHART_REVEAL_PAUSE: 400,
 } as const;
 
 export const LIMITS = {
@@ -30,10 +51,12 @@ export const VALID_AGENT_IDS = new Set<AgentId>([
 export const PRESET_TOPICS = [
   'Jordan vs LeBron',
   'Messi vs Ronaldo',
-  'Pele vs Maradona',
+  'Trump vs Obama',
+  'Elon vs Zuckerberg',
+  'Remote vs Office',
+  'Build vs Buy',
+  'Dashboards vs AI Agents',
   'SQL vs Python',
-  'Dashboards vs AI agents',
-  'AI vs Humans',
 ] as const;
 
 export const API_KEY_STORAGE_KEY = 'data-council-api-key';
