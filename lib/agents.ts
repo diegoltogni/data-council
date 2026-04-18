@@ -18,6 +18,7 @@ CRITICAL label rules (NEVER BREAK THESE):
 - Chart labels = ONE WORD only. Just the name: "Obama", "Trump", "Jordan", "LeBron", "SQL", "Python".
 - ABSOLUTELY NO parentheses, years, ranges, or context in labels. NO "Obama (2009-2016)". NO "Jordan (age 26)". Just "Obama". Just "Jordan".
 - Any context (years, age ranges, conditions) goes in the subtitle field, NEVER in labels.
+- NEVER repeat the same label twice. Each label must be unique.
 - For line charts with time on the X axis: use null for data points where a subject has NO data (e.g., Obama has null for 2017-2020 because he wasn't president). NEVER use 0 for missing data — 0 means zero, null means "not applicable". The chart will show a gap in the line, which is correct.
 
 CRITICAL visual design rules — think like a human, not a machine:

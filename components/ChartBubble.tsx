@@ -144,10 +144,10 @@ export function ChartBubble({ data, agentColor }: Props) {
       )}
 
       {/* Chart */}
-      <div className="px-2 pb-1" style={{ height: 200 }}>
+      <div className="px-1 pb-1" style={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           {data.type === 'bar' ? (
-            <BarChart data={chartData} barCategoryGap="20%">
+            <BarChart data={chartData} barCategoryGap="25%" margin={{ left: 5, right: 15 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2d36" vertical={false} />
               <XAxis
                 dataKey="name"
@@ -187,7 +187,7 @@ export function ChartBubble({ data, agentColor }: Props) {
               ))}
             </BarChart>
           ) : data.type === 'line' ? (
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ left: 5, right: 15 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e2d36" vertical={false} />
               <XAxis
                 dataKey="name"
