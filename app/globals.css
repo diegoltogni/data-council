@@ -158,30 +158,32 @@ body {
 @keyframes vs-slide-left {
   0% {
     opacity: 0;
-    transform: translateX(-60px);
+    transform: translateX(-40px);
   }
-  60% {
+  50% {
     opacity: 1;
   }
   80% {
-    transform: translateX(4px);
+    transform: translateX(3px);
   }
   100% {
+    opacity: 1;
     transform: translateX(0);
   }
 }
 @keyframes vs-slide-right {
   0% {
     opacity: 0;
-    transform: translateX(60px);
+    transform: translateX(40px);
   }
-  60% {
+  50% {
     opacity: 1;
   }
   80% {
-    transform: translateX(-4px);
+    transform: translateX(-3px);
   }
   100% {
+    opacity: 1;
     transform: translateX(0);
   }
 }
@@ -191,7 +193,8 @@ body {
     transform: scale(0);
   }
   60% {
-    transform: scale(1.3);
+    transform: scale(1.2);
+    opacity: 1;
   }
   100% {
     opacity: 1;

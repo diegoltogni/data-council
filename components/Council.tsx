@@ -163,7 +163,7 @@ export function Council({ topic, lang, onReset }: Props) {
 
   const copyTranscript = useCallback(async () => {
     const header = `The Data Council\nTopic: ${topic}\n${'—'.repeat(30)}\n\n`;
-    const footer = `\n\n${'—'.repeat(30)}\nPowered by The Data Council — thedatacouncil.ai`;
+    const footer = `\n\n${'—'.repeat(30)}\nPowered by The Data Council — council.experiai.com`;
     try {
       await navigator.clipboard.writeText(header + transcript + footer);
       setCopied(true);

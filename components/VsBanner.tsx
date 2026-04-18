@@ -25,7 +25,7 @@ export function VsBanner({ topic }: Props) {
 
   return (
     <div className="mx-3 my-4">
-      <div className="bg-gradient-to-b from-[#1a2730] to-[#111b21] rounded-2xl border border-[#2a3942] overflow-hidden relative">
+      <div className="bg-gradient-to-b from-[#1a2730] to-[#111b21] rounded-2xl border border-[#2a3942] relative">
         {/* Glow effects */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute left-0 top-0 w-1/2 h-full bg-gradient-to-r from-[#00a884]/20 to-transparent" />

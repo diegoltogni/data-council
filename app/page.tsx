@@ -246,7 +246,7 @@ function HomeInner() {
           <div className="hidden sm:flex flex-col items-center gap-1.5">
             <div className="bg-white p-1.5 rounded-md">
               <QRCodeSVG
-                value="https://data-council-mu.vercel.app"
+                value="https://council.experiai.com"
                 size={64}
                 bgColor="#ffffff"
                 fgColor="#0b141a"

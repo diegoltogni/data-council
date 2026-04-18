@@ -26,7 +26,7 @@ export function Scorecard({ data, topic }: Props) {
       ``,
       `"${data.summary}"`,
       ``,
-      `Try it yourself → thedatacouncil.ai`,
+      `Try it yourself → council.experiai.com`,
     ];
     navigator.clipboard.writeText(lines.join('\n')).then(() => {
       setCopied(true);
@@ -87,7 +87,7 @@ export function Scorecard({ data, topic }: Props) {
         {/* Footer + Share */}
         <div className="bg-[#0d1820] px-5 py-3 flex items-center justify-between border-t border-[#1a2730]">
           <p className="text-[9px] text-[#556770]">
-            ⚡ thedatacouncil.ai
+            ⚡ council.experiai.com
           </p>
           <button
             onClick={shareText}
