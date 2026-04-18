@@ -48,15 +48,49 @@ export const VALID_AGENT_IDS = new Set<AgentId>([
   'hot-take',
 ]);
 
-export const PRESET_TOPICS = [
+/** Full pool of debate topics — 6 are randomly picked on each page load */
+export const TOPIC_POOL = [
+  // Sports
   'Jordan vs LeBron',
   'Messi vs Ronaldo',
-  'Trump vs Obama',
-  'Elon vs Zuckerberg',
+  'Pele vs Maradona',
+  'Federer vs Nadal',
+  'Ali vs Tyson',
+  'Brady vs Montana',
+  'Senna vs Schumacher',
+  // Tech & AI
+  'SQL vs Python',
+  'Dashboards vs AI Agents',
+  'AWS vs Azure',
+  'React vs Vue',
+  'Monolith vs Microservices',
+  'REST vs GraphQL',
+  'Postgres vs MongoDB',
+  // Business
   'Remote vs Office',
   'Build vs Buy',
-  'Dashboards vs AI Agents',
-  'SQL vs Python',
+  'Startup vs Corporate',
+  'MBA vs Experience',
+  'Equity vs Salary',
+  'Bootstrapped vs VC-funded',
+  // Culture & Politics
+  'Trump vs Obama',
+  'Elon vs Zuckerberg',
+  'Books vs Podcasts',
+  'City vs Countryside',
+  'iPhone vs Android',
+  'Netflix vs Cinema',
+  'Bitcoin vs Gold',
 ] as const;
+
+/** Pick n random items from the pool */
+export function pickRandomTopics(n: number = 6): string[] {
+  const pool = [...TOPIC_POOL];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, n);
+}
 
 export const API_KEY_STORAGE_KEY = 'data-council-api-key';

@@ -136,20 +136,15 @@ export function ChartBubble({ data, agentColor }: Props) {
         )}
       </div>
 
-      {/* Axis labels */}
-      {(data.yLabel || data.xLabel) && data.type !== 'radar' && (
-        <div className="flex items-center justify-between px-3 pb-0.5">
-          {data.yLabel ? (
-            <span className="text-[9px] text-[#667781] italic">Y: {data.yLabel}</span>
-          ) : <span />}
-          {data.xLabel ? (
-            <span className="text-[9px] text-[#667781] italic">X: {data.xLabel}</span>
-          ) : <span />}
+      {/* Y-axis label — top-left, above chart (Nature/FT style) */}
+      {data.yLabel && data.type !== 'radar' && (
+        <div className="px-3 pt-1">
+          <span className="text-[9px] text-[#667781] uppercase tracking-wider">{data.yLabel}</span>
         </div>
       )}
 
       {/* Chart */}
-      <div className="px-2 pb-3" style={{ height: 200 }}>
+      <div className="px-2 pb-1" style={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           {data.type === 'bar' ? (
             <BarChart data={chartData} barCategoryGap="20%">
@@ -247,10 +242,17 @@ export function ChartBubble({ data, agentColor }: Props) {
         </ResponsiveContainer>
       </div>
 
-      {/* Source footnote */}
+      {/* X-axis label — bottom-right (above footer) */}
+      {data.xLabel && data.type !== 'radar' && (
+        <div className="px-3 pb-1">
+          <p className="text-[9px] text-[#667781] text-right uppercase tracking-wider">{data.xLabel}</p>
+        </div>
+      )}
+
+      {/* Source footer — distinct strip */}
       {sourceText && (
-        <div className="px-3 pb-2 -mt-1">
-          <p className="text-[9px] text-[#667781] text-right italic">
+        <div className="bg-[#0d1820] px-3 py-1.5 border-t border-[#1a2730] rounded-b-xl">
+          <p className="text-[8px] text-[#556770] text-right">
             Source: {sourceText}
           </p>
         </div>

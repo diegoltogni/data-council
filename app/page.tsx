@@ -6,7 +6,7 @@ import { Council } from '@/components/Council';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ApiKeySetup } from '@/components/ApiKeySetup';
 import { agents, ALL_AGENTS } from '@/lib/agents';
-import { PRESET_TOPICS, API_KEY_STORAGE_KEY } from '@/lib/constants';
+import { pickRandomTopics, API_KEY_STORAGE_KEY } from '@/lib/constants';
 import { events } from '@/lib/analytics';
 import { LanguageProvider, LanguageSwitch, useLanguage } from '@/lib/LanguageContext';
 
@@ -47,6 +47,7 @@ function HomeInner() {
   const { lang, t } = useLanguage();
   const [customTopic, setCustomTopic] = useState('');
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [topics] = useState(() => pickRandomTopics(6));
   const [needsApiKey, setNeedsApiKey] = useState(false);
   const [checkedKey, setCheckedKey] = useState(false);
 
@@ -203,7 +204,7 @@ function HomeInner() {
           className="grid grid-cols-2 gap-2 slide-up"
           style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}
         >
-          {PRESET_TOPICS.map((preset) => (
+          {topics.map((preset) => (
             <button
               key={preset}
               onClick={() => startTopic(preset, false)}
