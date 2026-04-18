@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Council } from '@/components/Council';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ApiKeySetup } from '@/components/ApiKeySetup';
@@ -197,18 +198,32 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-[10px] text-[#667781] mt-8">
-          Powered by Claude &middot;{' '}
-          <a
-            href="https://github.com/diegoltogni/data-council"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[#8696a0] transition-colors"
-          >
-            Open Source
-          </a>
-        </p>
+        {/* QR Code + Footer */}
+        <div className="flex flex-col items-center mt-8 gap-3 slide-up" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
+          <div className="bg-white p-2 rounded-lg">
+            <QRCodeSVG
+              value="https://data-council-mu.vercel.app"
+              size={80}
+              bgColor="#ffffff"
+              fgColor="#0b141a"
+              level="M"
+            />
+          </div>
+          <p className="text-[10px] text-[#667781]">
+            Scan to try on your phone
+          </p>
+          <p className="text-[10px] text-[#667781]">
+            Powered by Claude &middot;{' '}
+            <a
+              href="https://github.com/diegoltogni/data-council"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#8696a0] transition-colors"
+            >
+              Open Source
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
