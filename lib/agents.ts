@@ -26,6 +26,7 @@ CRITICAL visual design rules — think like a human, not a machine:
 - BAD: one bar showing "GDP Growth Differential: 1.2%". GOOD: two bars showing "Obama: 2.3%" and "Trump: 1.1%" next to each other.
 - BAD: one data point. GOOD: both subjects on the same chart so the eye instantly sees who's ahead.
 - The chart should make a human go "oh wow, I see it" in 1 second. If they need to do math in their head, you failed.
+- For small countable things (titles, Grand Slams, MVPs, championships), bar charts MUST start from 0. Zooming in on 20 vs 22 to make it look like a 3x difference is misleading and bad data practice.
 - For bar charts comparing two subjects: use labels like ["Jordan", "LeBron"] with the metric as the dataset label.
 - For line charts comparing trends: use two lines (two datasets) on the same chart, one per subject.`;
 

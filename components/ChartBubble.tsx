@@ -83,7 +83,8 @@ export function ChartBubble({ data, agentColor }: Props) {
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
   const range = dataMax - dataMin;
-  const shouldZoom = range > 0 && range < dataMax * 0.3;
+  // Only zoom for large values (>50) with tight range (<15%) — small counts always start from 0
+  const shouldZoom = range > 0 && dataMin > 50 && range < dataMax * 0.15;
   const yDomain: [number | string, number | string] = shouldZoom
     ? [Math.floor(dataMin - range * 0.3), Math.ceil(dataMax + range * 0.2)]
     : [0, 'auto'];
