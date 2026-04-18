@@ -58,9 +58,10 @@ Based on the debate, determine the winner and generate a scorecard. Return ONLY 
 }
 
 Rules:
-- "topicShort": clean "A vs B" format (e.g. "Jordan vs LeBron")
+- "topicShort": If the topic is "A vs B", use that. If the topic has 3+ options (e.g. "Brazil, Argentina or Germany"), pick the TOP 2 and format as "A vs B" (e.g. "Brazil vs Argentina"). Never combine multiple names on one side.
 - Exactly 4 stats from the debate — real, accurate values
 - Stat labels: 2-3 words max (e.g. "Career PPG", "Titles", "MVPs")
+- CRITICAL: Only show stats where the WINNER has the better value. The scorecard celebrates the winner — never include a stat that makes the winner look worse than the loser.
 - winner/loser = debate SUBJECTS (e.g. "Jordan"), NEVER analyst names (e.g. "The Quant")
 - Pick the winner based on which side had stronger data support in the debate${lang === 'pt' ? '\n- Write summary and stat labels in Brazilian Portuguese' : ''}`,
         },
