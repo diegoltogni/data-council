@@ -47,9 +47,21 @@ function HomeInner() {
   const { lang, t } = useLanguage();
   const [customTopic, setCustomTopic] = useState('');
   const [activeTopic, setActiveTopic] = useState<string | null>(null);
-  const [topics] = useState(() => pickRandomTopics(6));
+  const [trendingTopics, setTrendingTopics] = useState<string[]>([]);
+  const [staticTopics, setStaticTopics] = useState<string[]>(() => pickRandomTopics(6));
   const [needsApiKey, setNeedsApiKey] = useState(false);
   const [checkedKey, setCheckedKey] = useState(false);
+
+  // Fetch trending topics
+  useEffect(() => {
+    fetch(`/api/topics?lang=${lang}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.trending?.length) setTrendingTopics(data.trending);
+        if (data.static?.length) setStaticTopics(data.static);
+      })
+      .catch(() => {});
+  }, [lang]);
 
   // Check if API key is configured (server or browser)
   useEffect(() => {
@@ -201,16 +213,28 @@ function HomeInner() {
           <div className="flex-1 h-px bg-[#2a3942]" />
         </div>
 
-        {/* Preset topics */}
+        {/* Topics grid: trending first, then static */}
         <div
           className="grid grid-cols-2 gap-2 slide-up"
           style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}
         >
-          {topics.map((preset) => (
+          {trendingTopics.map((preset) => (
             <button
               key={preset}
               onClick={() => startTopic(preset, false)}
-              className="bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] px-3 py-4 rounded-xl text-center transition-all duration-200 border border-[#2a3942] hover:border-[#3b4a54] hover:scale-[1.03]"
+              className="bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] px-3 py-3.5 rounded-xl text-center transition-all duration-200 border border-[#00a884]/30 hover:border-[#00a884]/60 hover:scale-[1.03] relative"
+            >
+              <span className="absolute top-1.5 right-1.5 text-[7px] bg-[#00a884]/20 text-[#00a884] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wider">
+                trending
+              </span>
+              {formatTopicLabel(preset)}
+            </button>
+          ))}
+          {staticTopics.slice(0, 6 - trendingTopics.length).map((preset) => (
+            <button
+              key={preset}
+              onClick={() => startTopic(preset, false)}
+              className="bg-[#202c33] hover:bg-[#2a3942] text-[#e9edef] px-3 py-3.5 rounded-xl text-center transition-all duration-200 border border-[#2a3942] hover:border-[#3b4a54] hover:scale-[1.03]"
             >
               {formatTopicLabel(preset)}
             </button>
