@@ -192,6 +192,8 @@ export function Council({ topic, lang, onReset }: Props) {
 
     const delay = (ms: number) =>
       new Promise<void>((r) => {
+        // Skip delays when tab is hidden — debate continues in background
+        if (document.hidden) { r(); return; }
         const id = setTimeout(r, ms);
         if (cancelled) clearTimeout(id);
       });
